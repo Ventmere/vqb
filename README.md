@@ -1,2 +1,2 @@
 # vqb
-An abstract query builder.
+An abstract schema query builder.
