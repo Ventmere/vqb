@@ -16,7 +16,7 @@ import values from 'lodash/object/values';
 
 import getProp from './getprop'; 
 
-const WhereOperators = ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'in'];
+const WhereOperators = ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'in', 'contains'];
 const WhereOperaterAliases = {
   '==': 'eq',
   '=': 'eq',
@@ -103,7 +103,12 @@ export class PredicateBuilder {
     }
 
     const prop = this._getProp(path);
+    const propType = prop.type;
     if (operator === 'in') {
+      if (!isPrimitiveType(prop.type)) {
+        this._throw(`Can not use 'in' for '${path}' type '${propType}'`);
+      }
+
       if (!isArray(value)) {
         this._throw(`Value must be an array for operator 'in'`);
       }
@@ -111,23 +116,19 @@ export class PredicateBuilder {
       if (!all(value, v => v && (isString(v) || isNumber(v) || isBoolean(v) || isDate(v)))) {
         this._throw(`Invalid value for operator 'in'`);
       }
-    } else {
-      if (prop.type === 'array') {
-        if (operator !== 'eq') {
-          this._throw(`Can not compare values in array '${path}' using operator '${operator}'`);
-        }
-
-        if (!isPrimitiveType(prop.item.type)) {
-          this._throw(`Can not compare equality for '${path}', type 'array of ${prop.item.type}'`);
+    } else if (operator === 'contains') {
+      if (propType === 'array') {
+        if (prop.item.type !== 'string') {
+          this._throw(`Can not use 'contains' for '${path}' type 'array of ${propType}'`);
         }
       } else {
-        if (!isPrimitiveType(prop.type)) {
-          this._throw(`Can not compare equality for '${path}' type '${prop.type}'`);
+        if (propType !== 'string') {
+          this._throw(`Can not use 'contains' for '${path}' type '${propType}'`);
         }
       }
-
-      if (!canCompare(value)) {
-        this._throw(`Can not compare path '${path}' to '${value}'`);
+    } else {
+      if (!isPrimitiveType(prop.type) || !canCompare(value)) {
+        this._throw(`Can not compare path '${path}' (${propType}) to '${value}'`);
       }
     }
 

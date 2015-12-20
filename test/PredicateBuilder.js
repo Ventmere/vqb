@@ -10,14 +10,14 @@ describe('PredicateBuilder', function() {
     const parts = pb
       .where({
         name: 1,
-        related: 2
+        age: 2
       })
       .compile()[0].parts
       .map(p => omit(p, 'prop', 'type', 'not'));
 
     expect(parts).to.deep.equal([
       { path: 'name', operator: 'eq', value: 1, bool: 'and' },
-      { path: 'related', operator: 'eq', value: 2, bool: 'and' }
+      { path: 'age', operator: 'eq', value: 2, bool: 'and' }
     ]);
   });
 
@@ -85,7 +85,7 @@ describe('PredicateBuilder', function() {
       .whereNot('handle', 'notHandle')
       .where('age', 'lt', 18)
       .where('age', 'not lt', 28)
-      .where('related', 'vname')
+      .where('related', 'contains', 'vname')
       .compile()
       .map(p => omit(p, 'prop', 'type'));
 
@@ -96,7 +96,7 @@ describe('PredicateBuilder', function() {
           { path: 'handle', operator: 'eq', value: 'notHandle', bool: 'and', not: true },
           { path: 'age', operator: 'lt', value: 18, bool: 'and', not: false },
           { path: 'age', operator: 'lt', value: 28, bool: 'and', not: true },
-          { path: 'related', operator: 'eq', value: 'vname', bool: 'and', not: false }
+          { path: 'related', operator: 'contains', value: 'vname', bool: 'and', not: false }
         ]);
   });
 
@@ -112,5 +112,56 @@ describe('PredicateBuilder', function() {
         operator: 'in',
         value: ['w', 't', 'f']
       });
+  });
+
+  it('check type', function() {
+    const pb = new PredicateBuilder(s);
+    expect(function() {
+      pb.where('complex', '1');
+    }).throws(/Can not compare path/);
+
+    expect(function() {
+      pb.where('name', {});
+    }).throws(/Can not compare path/);
+
+    expect(function() {
+      pb.where('name', []);
+    }).throws(/Can not compare path/);
+
+    expect(function() {
+      pb.where('name', undefined);
+    }).throws(/Can not compare path/);
+
+    expect(function() {
+      pb.where('name', null);
+    }).throws(/Can not compare path/);
+  });
+
+  it(`operator 'in' check`, function() {
+    const pb = new PredicateBuilder(s);
+
+    expect(function() {
+      pb.where('complex', 'in', [1])
+    }).throws(/Can not use 'in' for/);
+
+    expect(function() {
+      pb.where('name', 'in', 88)
+    }).throws(/Value must be an array/);
+
+    expect(function() {
+      pb.where('name', 'in', [7, {}])
+    }).throws(/Invalid value for operator 'in'/);
+  });
+
+  it(`operator 'contains' check`, function() {
+    const pb = new PredicateBuilder(s);
+
+    expect(function() {
+      pb.where('complex', 'contains', [1])
+    }).throws(/Can not use 'contains' for/);
+
+    expect(function() {
+      pb.where('age', 'contains', 1)
+    }).throws(/Can not use 'contains' for/);
   });
 });
