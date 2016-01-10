@@ -344,5 +344,5 @@ function isPrimitiveType(type) {
 }
 
 function canCompare(value) {
-  return value && (isString(value) || isNumber(value) || isBoolean(value) || isDate(value));
+  return (value !== null && value !== undefined) && (isString(value) || isNumber(value) || isBoolean(value) || isDate(value));
 }
